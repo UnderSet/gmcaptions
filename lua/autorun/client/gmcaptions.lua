@@ -125,3 +125,4 @@ end
 
 hook.Add("OnCloseCaptionEmit", "GMCaptionThingGrab", ParseCaption)
 hook.Add("HUDPaint", "GMCaptionThingDraw", DrawCaptions)
+hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if name == "CHudCloseCaption" then return false end end)
