@@ -123,3 +123,5 @@ function DrawCaptions()
     end
 end
 
+hook.Add("OnCloseCaptionEmit", "GMCaptionThingGrab", ParseCaption)
+hook.Add("HUDPaint", "GMCaptionThingDraw", DrawCaptions)
