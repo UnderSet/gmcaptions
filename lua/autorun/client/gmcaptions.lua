@@ -59,7 +59,7 @@ function DrawCaptions()
                 local texttbl = string.Explode(" ", captiondata[i][1][1][1], false)
 
                 for f=1,#texttbl do
-                    if surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < scrw * 0.6 then
+                    if surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < ScrW() * 0.6 then
                         drawtxt = drawtxt .. " " .. texttbl[f]
                         if f == #texttbl then
                             drawtbl[#drawtbl + 1] = drawtxt
@@ -74,7 +74,7 @@ function DrawCaptions()
                 for f=1,#drawtbl do
                     drawtxt = drawtxt .. drawtbl[f] .. "\n"
                 end
-                draw.DrawText(drawtxt, "DermaLarge", scrw * 0.5, scrh * 0.7 + h * (i - 1), captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
+                draw.DrawText(drawtxt, "DermaLarge", ScrW() * 0.5, ScrH() * 0.7 + h * (i - 1), captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
                 linecount = linecount + #drawtbl
             else
                 local drawtbl = {}
@@ -87,7 +87,7 @@ function DrawCaptions()
 
                     -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
                     for f=1,#texttbl do
-                        if surface.GetTextSize(teststring .. " " .. texttbl[f]) < scrw * 0.6 then
+                        if surface.GetTextSize(teststring .. " " .. texttbl[f]) < ScrW() * 0.6 then
                             teststring = teststring .. " " .. texttbl[f]
                             if f == #texttbl then
                                 drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}    
@@ -106,7 +106,7 @@ function DrawCaptions()
                     for e=1,#drawtbl[i] do
                         linelen = linelen + drawtbl[i][e][3]
                     end
-                    surface.SetTextPos(scrw * 0.5 - linelen * 0.5, scrh * 0.7 + h * linecount)
+                    surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.7 + h * linecount)
                     for e=1,#drawtbl[i] do
                         surface.SetTextColor(drawtbl[i][e][2].r,drawtbl[i][e][2].g,drawtbl[i][e][2].b,255)
                         surface.DrawText(drawtbl[i][e][1])
