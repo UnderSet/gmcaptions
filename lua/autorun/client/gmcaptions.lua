@@ -14,14 +14,14 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
     local color = color_white
     
     if text != nil and enable:GetBool() then
-        local debugtext = "<clr:128,255,127>HELLO THERE<clr:126,217,255>COLOR SWITCH<clr:255,255,255>really stupid long line why am I trying to fabricate a stupid long line what the hell is wrong with me why do I need such a long line, why do I still need a much longer line what is wrong with glua today" -- intentionally long af to force line break
-        if GetConVar("developer"):GetBool() and debugparsing:GetBool() then text = debugtext end
+        if GetConVar("developer"):GetBool() and debugparsing:GetBool() then 
+            text = "<clr:128,255,127>HELLO THERE<clr:126,217,255>COLOR SWITCH<clr:255,255,255>really stupid long line why am I trying to fabricate a stupid long line what the hell is wrong with me why do I need such a long line, why do I still need a much longer line what is wrong with glua today" --forces line break on 16:9 too
+        end
 
         if !string.match(text, "<.->") then
             outtable[1] = {text, color}
         else
             actualtext = string.Explode("<", text, false)
-            --PrintTable(actualtext)
             for i=1,#actualtext do
                 if string.StartsWith(actualtext[i], "clr:") then
                     local colorstr = string.Explode(">",string.Replace(actualtext[i], "clr:", ""))[1]
@@ -60,7 +60,7 @@ function DrawCaptions()
                 local texttbl = string.Explode(" ", captiondata[i][1][1][1], false)
 
                 for f=1,#texttbl do
-                    if surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < ScrW() * 0.6 then
+                    if select(1, surface.GetTextSize(drawtxt .. " " .. texttbl[f])) < ScrW() * 0.6 then
                         drawtxt = drawtxt .. " " .. texttbl[f]
                         if f == #texttbl then
                             drawtbl[#drawtbl + 1] = drawtxt
