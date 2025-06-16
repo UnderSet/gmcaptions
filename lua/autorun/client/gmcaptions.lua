@@ -77,9 +77,6 @@ function DrawCaptions()
                 end
                 draw.DrawText(drawtxt, "DermaLarge", ScrW() * 0.5, ScrH() * 0.75 + h * linecount, captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
                 linecount = linecount + #drawtbl
-                print("using this case")
-                PrintTable(drawtbl)
-                print(#drawtbl)
             else
                 local drawtbl = {}
                 drawtbl[1] = {} -- thanks lua
