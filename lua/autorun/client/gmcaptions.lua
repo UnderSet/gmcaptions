@@ -81,6 +81,7 @@ function DrawCaptions()
                 local drawtbl = {}
                 drawtbl[1] = {} -- thanks lua
                 local drawtbli = 1
+                local teststringlen = 0
                 for e=1,#captiondata[i][1] do
                     surface.SetFont("DermaLarge")
                     local texttbl = string.Explode(" ", captiondata[i][1][e][1], false)
@@ -88,20 +89,23 @@ function DrawCaptions()
 
                     -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
                     for f=1,#texttbl do
-                        if surface.GetTextSize(teststring .. " " .. texttbl[f]) < ScrW() * 0.6 then
+                        if (select(1, surface.GetTextSize(teststring .. " " .. texttbl[f])) + teststringlen) < ScrW() * 0.6 then
                             teststring = teststring .. " " .. texttbl[f]
                             if f == #texttbl then
+                                teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
+                                print(teststringlen)
                                 drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}    
                             end
                         else
                             drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}
                             teststring = texttbl[f]
+                            teststringlen = 0
                             drawtbl[#drawtbl + 1] = {}
                             drawtbli = #drawtbl
                         end
                     end
                 end
-
+                
                 for i=1,#drawtbl do
                     local linelen = 0
                     for e=1,#drawtbl[i] do
@@ -112,8 +116,8 @@ function DrawCaptions()
                         surface.SetTextColor(drawtbl[i][e][2].r,drawtbl[i][e][2].g,drawtbl[i][e][2].b,255)
                         surface.DrawText(drawtbl[i][e][1])
                     end
+                    linecount = linecount + 1
                 end
-                linecount = linecount + #drawtbl
             end
         end
 
