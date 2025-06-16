@@ -3,6 +3,7 @@
 
 local enable = CreateClientConVar("funnycaptions_enable", 1, true, false, "enable said funne captions")
 local debugparsing = CreateClientConVar("funnycaptions_debugparse", 1, true, false, "enable dev debug parse text")
+local showsfx = CreateClientConVar("funnycaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
 
 local captiondata = {}
 
@@ -12,7 +13,7 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
     local counter = 0
     local color = color_white
     
-    if (text != nil and !string.match(text, "*pain!%*")) and enable:GetBool() then
+    if text != nil and enable:GetBool() then
         local debugtext = "<clr:128,255,127>HELLO THERE<clr:126,217,255>COLOR SWITCH<clr:255,255,255>really stupid long line why am I trying to fabricate a stupid long line what the hell is wrong with me why do I need such a long line, why do I still need a much longer line what is wrong with glua today" -- intentionally long af to force line break
         if GetConVar("developer"):GetBool() and debugparsing:GetBool() then text = debugtext end
 
@@ -29,7 +30,7 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                     color = Color(color[1], color[2], color[3], 255) -- this is stupid
 
                     outtable[i] = {outtext, color}
-                elseif string.StartsWith(actualtext[i], "sfx>") then return
+                elseif string.StartsWith(actualtext[i], "sfx>") and showsfx:GetBool() then return
                 else
                     local outtext = string.Explode(">", actualtext[i], false)[2]
                     outtable[i] = {outtext, color}
