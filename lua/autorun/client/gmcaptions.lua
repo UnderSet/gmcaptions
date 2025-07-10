@@ -60,7 +60,10 @@ function DrawCaptions()
                 local texttbl = string.Explode(" ", captiondata[i][1][1][1], false)
 
                 for f=1,#texttbl do
-                    if select(1, surface.GetTextSize(drawtxt .. " " .. texttbl[f])) < ScrW() * 0.6 then
+                    if string.StartsWith(texttbl[f], "<cr>") then
+                        drawtbl[#drawtbl + 1] = drawtxt
+                        drawtxt = string.Right(texttbl[f], 3)
+                    elseif surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < scrw * 0.6 then
                         drawtxt = drawtxt .. " " .. texttbl[f]
                         if f == #texttbl then
                             drawtbl[#drawtbl + 1] = drawtxt
@@ -89,11 +92,16 @@ function DrawCaptions()
 
                     -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
                     for f=1,#texttbl do
-                        if (select(1, surface.GetTextSize(teststring .. " " .. texttbl[f])) + teststringlen) < ScrW() * 0.6 then
+                        if string.StartsWith(texttbl[f], "<cr>") then -- force a line break
+                            drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}
+                            teststring = string.Right(texttbl[f], string.len(texttbl[f]) - 4)
+                            teststringlen = 0
+                            drawtbl[#drawtbl + 1] = {}
+                            drawtbli = #drawtbl
+                        elseif (select(1, surface.GetTextSize(teststring .. " " .. texttbl[f])) + teststringlen) < ScrW() * 0.55 then
                             teststring = teststring .. " " .. texttbl[f]
                             if f == #texttbl then
                                 teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
-                                print(teststringlen)
                                 drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}    
                             end
                         else
