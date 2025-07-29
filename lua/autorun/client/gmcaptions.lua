@@ -63,7 +63,7 @@ function DrawCaptions()
                     if string.StartsWith(texttbl[f], "<cr>") then
                         drawtbl[#drawtbl + 1] = drawtxt
                         drawtxt = string.Right(texttbl[f], 3)
-                    elseif surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < scrw * 0.6 then
+                    elseif surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < ScrW() * 0.6 then
                         drawtxt = drawtxt .. " " .. texttbl[f]
                         if f == #texttbl then
                             drawtbl[#drawtbl + 1] = drawtxt
