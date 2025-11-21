@@ -60,17 +60,21 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
 
         -- now we parse (it was running EVERY FRAME previously lmfao)
         if #outtable == 1 then
+            print(outtable[1][1])
             local drawtxt = ""
             local drawtbl = {}
             local texttbl = string.Explode(" ", outtable[1][1], false)
             surface.SetFont("CustomCaptionRenderFont")
 
             for f=1,#texttbl do
+                print(texttbl[f])
                 if !texttbl[f] then
                 elseif string.StartsWith(texttbl[f], "<cr>") then
+                    print("Case 1")
                     drawtbl[#drawtbl + 1] = drawtxt
                     drawtxt = string.Right(texttbl[f], 3)
                 elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < ScrW() * 0.65 then
+                    print("Case 2")
                     drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
                     if f == #texttbl then
                         drawtbl[#drawtbl + 1] = drawtxt
@@ -78,14 +82,15 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                 else
                     drawtbl[#drawtbl + 1] = drawtxt
                     drawtxt = texttbl[f]
+                    if f == #texttbl then
+                        drawtbl[#drawtbl + 1] = drawtxt
+                    end
                 end
+                print("Cycle " .. f .. ": " .. drawtxt)
             end
 
-            --[[for i = #drawtbl, 1, -1 do
-                if !drawtbl[i][1] then
-                    table.remove(drawtbl, i)
-                end
-            end]]
+            PrintTable(drawtbl)
+            print("lmao")
             expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime(), outtable[1][2] or color_white}
         else
             local drawtbl = {}
@@ -114,15 +119,19 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                         end
                     else
                         drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}
-                        teststring = texttbl[f]
-                        teststringlen = 0
                         drawtbl[#drawtbl + 1] = {}
                         drawtbli = #drawtbl
+                        teststring = texttbl[f]
+                        teststringlen = 0
+                        if f == #texttbl then
+                            teststringlen = 0
+                            drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}    
+                        end
                     end
                 end
             end
             
-            --PrintTable(drawtbl)
+            PrintTable(drawtbl)
             expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime()}
         end
     end
