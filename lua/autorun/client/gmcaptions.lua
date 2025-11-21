@@ -5,7 +5,21 @@ local enable = CreateClientConVar("funnycaptions_enable", 1, true, false, "enabl
 local debugparsing = CreateClientConVar("funnycaptions_debugparse", 1, true, false, "enable dev debug parse text")
 local showsfx = CreateClientConVar("funnycaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
 
-local captiondata = {}
+local expcaptionout = expcaptionout or {}
+
+local lineadjust = lineadjust or 0
+local totallines = 0
+
+surface.CreateFont("CustomCaptionRenderFont", {
+    font = "Roboto", -- Use the font-name which is shown to you by your operating system Font Viewer.
+    extended = true,
+	size = 30 * (ScrH() / 1080),
+	weight = 300,
+	antialias = true,
+	shadow = true,
+	additive = false,
+	outline = false,
+})
 
 local function ParseCaption(soundscript, duration, fromplayer, text)
     -- beware: might induce sleep loss and insanity
@@ -30,7 +44,7 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                     color = Color(color[1], color[2], color[3], 255) -- this is stupid
 
                     outtable[i] = {outtext, color}
-                elseif string.StartsWith(actualtext[i], "sfx>") and showsfx:GetBool() then return
+                elseif string.StartsWith(actualtext[i], "sfx>") and !showsfx:GetBool() then
                 else
                     local outtext = string.Explode(">", actualtext[i], false)[2]
                     outtable[i] = {outtext, color}
@@ -39,32 +53,103 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
         end
 
         for i = #outtable, 1, -1 do
-            if outtable[i][1] == "" or !outtable[i][1] then
+            if !outtable[i][1] then
                 table.remove(outtable, i)
             end
         end
 
-        captiondata[#captiondata + 1] = {outtable, CurTime() + duration}
+        -- now we parse (it was running EVERY FRAME previously lmfao)
+        if #outtable == 1 then
+            local drawtxt = ""
+            local drawtbl = {}
+            local texttbl = string.Explode(" ", outtable[1][1], false)
+            surface.SetFont("CustomCaptionRenderFont")
+
+            for f=1,#texttbl do
+                if !texttbl[f] then
+                elseif string.StartsWith(texttbl[f], "<cr>") then
+                    drawtbl[#drawtbl + 1] = drawtxt
+                    drawtxt = string.Right(texttbl[f], 3)
+                elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < ScrW() * 0.65 then
+                    drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
+                    if f == #texttbl then
+                        drawtbl[#drawtbl + 1] = drawtxt
+                    end
+                else
+                    drawtbl[#drawtbl + 1] = drawtxt
+                    drawtxt = texttbl[f]
+                end
+            end
+
+            --[[for i = #drawtbl, 1, -1 do
+                if !drawtbl[i][1] then
+                    table.remove(drawtbl, i)
+                end
+            end]]
+            expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime(), outtable[1][2] or color_white}
+        else
+            local drawtbl = {}
+            drawtbl[1] = {} -- thanks lua
+            local drawtbli = 1
+            local teststringlen = 0
+            surface.SetFont("CustomCaptionRenderFont")
+
+            for e=1,#outtable do
+                local texttbl = string.Explode(" ", outtable[e][1], false)
+                local teststring = ""
+
+                -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
+                for f=1,#texttbl do
+                    if string.StartsWith(texttbl[f], "<cr>") then -- force a line break
+                        drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}
+                        teststring = string.Right(texttbl[f], string.len(texttbl[f]) - 4)
+                        teststringlen = 0
+                        drawtbl[#drawtbl + 1] = {}
+                        drawtbli = #drawtbl
+                    elseif (select(1, surface.GetTextSize(teststring .. (teststring == "" and "" or " ") .. texttbl[f])) + teststringlen) < ScrW() * 0.65 then
+                        teststring = teststring .. (teststring == "" and "" or " ") .. texttbl[f]
+                        if f == #texttbl then
+                            teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
+                            drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}    
+                        end
+                    else
+                        drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}
+                        teststring = texttbl[f]
+                        teststringlen = 0
+                        drawtbl[#drawtbl + 1] = {}
+                        drawtbli = #drawtbl
+                    end
+                end
+            end
+            
+            --PrintTable(drawtbl)
+            expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime()}
+        end
     end
 end
 
-function DrawCaptions()
-    surface.SetFont("DermaLarge")
+local function DrawCaptions()
+    surface.SetFont("CustomCaptionRenderFont")
     local h = select(2, surface.GetTextSize("TESTING"))
     if enable:GetBool() then
         local linecount = 0
-        for i=1,#captiondata do
+
+        lineadjust = math.max(lineadjust - FrameTime() * 6, 0)
+
+        -- DEPRECATED: Previous rendering implementation, PARSES ONCE EVERY FRAME
+        --[[for i=1,#captiondata do
             if #captiondata[i][1] == 1 then
                 local drawtxt = ""
                 local drawtbl = {}
                 local texttbl = string.Explode(" ", captiondata[i][1][1][1], false)
 
                 for f=1,#texttbl do
-                    if string.StartsWith(texttbl[f], "<cr>") then
+                    if !texttbl[f] then
+                    elseif string.StartsWith(texttbl[f], "<cr>") then
                         drawtbl[#drawtbl + 1] = drawtxt
                         drawtxt = string.Right(texttbl[f], 3)
-                    elseif surface.GetTextSize(drawtxt .. " " .. texttbl[f]) < ScrW() * 0.6 then
-                        drawtxt = drawtxt .. " " .. texttbl[f]
+                    elseif surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]) < ScrW() * 0.6 then
+                        drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
                         if f == #texttbl then
                             drawtbl[#drawtbl + 1] = drawtxt
                         end
@@ -76,9 +161,9 @@ function DrawCaptions()
 
                 drawtxt = ""
                 for f=1,#drawtbl do
-                    drawtxt = drawtxt .. drawtbl[f] .. "\n"
+                    drawtxt = drawtxt .. drawtbl[f] .. (#drawtbl >= 1 and "\n" or "")
                 end
-                draw.DrawText(drawtxt, "DermaLarge", ScrW() * 0.5, ScrH() * 0.75 + h * linecount, captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
+                draw.DrawText(drawtxt, "CustomCaptionRenderFont", ScrW() * 0.5, ScrH() * 0.75 + h * linecount, captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
                 linecount = linecount + #drawtbl
             else
                 local drawtbl = {}
@@ -86,7 +171,7 @@ function DrawCaptions()
                 local drawtbli = 1
                 local teststringlen = 0
                 for e=1,#captiondata[i][1] do
-                    surface.SetFont("DermaLarge")
+                    surface.SetFont("CustomCaptionRenderFont")
                     local texttbl = string.Explode(" ", captiondata[i][1][e][1], false)
                     local teststring = ""
 
@@ -98,8 +183,8 @@ function DrawCaptions()
                             teststringlen = 0
                             drawtbl[#drawtbl + 1] = {}
                             drawtbli = #drawtbl
-                        elseif (select(1, surface.GetTextSize(teststring .. " " .. texttbl[f])) + teststringlen) < ScrW() * 0.55 then
-                            teststring = teststring .. " " .. texttbl[f]
+                        elseif (select(1, surface.GetTextSize(teststring .. (teststring == "" and "" or " ") .. texttbl[f])) + teststringlen) < ScrW() * 0.55 then
+                            teststring = teststring .. (teststring == "" and "" or " ") .. texttbl[f]
                             if f == #texttbl then
                                 teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
                                 drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}    
@@ -127,11 +212,52 @@ function DrawCaptions()
                     linecount = linecount + 1
                 end
             end
+        end]]
+
+        for i=1,#expcaptionout do
+            if !expcaptionout[i][5] and #expcaptionout[i][1] >= 1 and totallines == 0 then
+                totallines = totallines + #expcaptionout[i][1]
+                lineadjust = lineadjust + #expcaptionout[i][1] - 1
+                expcaptionout[i][5] = true
+            elseif !expcaptionout[i][5] then
+                totallines = totallines + #expcaptionout[i][1]
+                lineadjust = lineadjust + #expcaptionout[i][1]
+                expcaptionout[i][5] = true
+            end
         end
 
-        for i = #captiondata, 1, -1 do
-            if captiondata[i][2] < CurTime() then table.remove(captiondata, i) end
+        for i=1,#expcaptionout do
+            if expcaptionout[i][4] then
+                local drawtxt = ""
+                for f=1,#expcaptionout[i][1] do
+                    drawtxt = drawtxt .. expcaptionout[i][1][f] .. (f < #expcaptionout[i][1] and "\n" or "")
+                end
+                draw.DrawText(drawtxt, "CustomCaptionRenderFont", ScrW() * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust,
+                    Color(expcaptionout[i][4].r,expcaptionout[i][4].g,expcaptionout[i][4].b,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
+                    or color_white, TEXT_ALIGN_CENTER)
+                linecount = linecount + #expcaptionout[i][1]
+            else
+                for g=1,#expcaptionout[i][1] do
+                    local linelen = 0
+                    for e=1,#expcaptionout[i][1][g] do
+                        linelen = linelen + expcaptionout[i][1][g][e][3]
+                    end
+                    surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust)
+                    for e=1,#expcaptionout[i][1][g] do
+                        surface.SetTextColor(expcaptionout[i][1][g][e][2].r,expcaptionout[i][1][g][e][2].g,expcaptionout[i][1][g][e][2].b,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
+                        surface.DrawText(expcaptionout[i][1][g][e][1])
+                    end
+                    linecount = linecount + 1
+                end
+            end
         end
+
+        -- DO NOT copy my nested if statements here
+        if expcaptionout[1] then if expcaptionout[1][2] + 1 < CurTime() then
+            --lineadjust = lineadjust + #expcaptionout[1][1]
+            totallines = math.Approach(totallines, 0, #expcaptionout[1][1])
+            table.remove(expcaptionout, 1)
+        end end
     end
 end
 
