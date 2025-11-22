@@ -60,21 +60,17 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
 
         -- now we parse (it was running EVERY FRAME previously lmfao)
         if #outtable == 1 then
-            print(outtable[1][1])
             local drawtxt = ""
             local drawtbl = {}
             local texttbl = string.Explode(" ", outtable[1][1], false)
             surface.SetFont("CustomCaptionRenderFont")
 
             for f=1,#texttbl do
-                print(texttbl[f])
                 if !texttbl[f] then
                 elseif string.StartsWith(texttbl[f], "<cr>") then
-                    print("Case 1")
                     drawtbl[#drawtbl + 1] = drawtxt
                     drawtxt = string.Right(texttbl[f], 3)
                 elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < ScrW() * 0.65 then
-                    print("Case 2")
                     drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
                     if f == #texttbl then
                         drawtbl[#drawtbl + 1] = drawtxt
@@ -86,11 +82,8 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                         drawtbl[#drawtbl + 1] = drawtxt
                     end
                 end
-                print("Cycle " .. f .. ": " .. drawtxt)
             end
 
-            PrintTable(drawtbl)
-            print("lmao")
             expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime(), outtable[1][2] or color_white}
         else
             local drawtbl = {}
@@ -131,7 +124,6 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                 end
             end
             
-            PrintTable(drawtbl)
             expcaptionout[#expcaptionout + 1] = {drawtbl, CurTime() + duration, CurTime()}
         end
     end
