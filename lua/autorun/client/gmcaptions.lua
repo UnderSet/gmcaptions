@@ -16,9 +16,9 @@ surface.CreateFont("CustomCaptionRenderFont", {
 	size = 30 * (ScrH() / 1080),
 	weight = 300,
 	antialias = true,
-	shadow = true,
+	shadow = false,
 	additive = false,
-	outline = false,
+	outline = true,
 })
 
 local function ParseCaption(soundscript, duration, fromplayer, text)
