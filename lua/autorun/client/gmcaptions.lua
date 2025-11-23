@@ -254,6 +254,7 @@ hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if (name == "CH
 hook.Add("OnScreenSizeChanged", "GMCaptionResChange", function() CreateFont() end)
 
 cvars.AddChangeCallback("funnycaptions_font", CreateFont, "CustomCaptionsRefreshFont")
+cvars.AddChangeCallback("funnycaptions_fontscale", CreateFont, "CustomCaptionsRefreshFont")
 
 concommand.Add("funnycaptions_resetcache", function()
     expcaptionout = {}
