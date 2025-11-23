@@ -1,25 +1,43 @@
 -- fun fact: like 99% of this is from my MWII HUD which is GPL, but I wrote all of this stuff myself so
 -- I can relicense it as I bloody please
+local maxlinesize = ScrH() * 1.1 - math.max(ScrH() * (16/9) - ScrW(), 0) -- easily adjust max line length yourself!
 
 local enable = CreateClientConVar("funnycaptions_enable", 1, true, false, "enable said funne captions")
 local debugparsing = CreateClientConVar("funnycaptions_debugparse", 1, true, false, "enable dev debug parse text")
 local showsfx = CreateClientConVar("funnycaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
+local font = CreateClientConVar("funnycaptions_font", "Roboto", true, false, "Font to use for captions. Default is Roboto.\nENTER NAME AS SHOWN IN SYSTEM FONT VIEWER, NOT FILENAME")
+local fontscale = CreateClientConVar("funnycaptions_fontscale", 1, true, false, "Adjust font scaling. This is a multiplier on top of the default size. Does not need to be adjusted with resolution as that is done automatically. Useful if you use another font that's significantly bigger/smaller.")
+local bgopacity = CreateClientConVar("funnycaptions_backgroundopacity", 0, true, false, "Controls subtitle background opacity. 0 is entirely transparent, 1 is entirely opaque (duh). Helps with readability. May impact dark/fully black subtitles (why do you have those???).", 0, 1)
 
 local expcaptionout = expcaptionout or {}
 
 local lineadjust = lineadjust or 0
 local totallines = 0
 
-surface.CreateFont("CustomCaptionRenderFont", {
-    font = "Roboto", -- Use the font-name which is shown to you by your operating system Font Viewer.
-    extended = true,
-	size = 30 * (ScrH() / 1080),
-	weight = 300,
-	antialias = true,
-	shadow = false,
-	additive = false,
-	outline = true,
-})
+
+local function CreateFont()
+    surface.CreateFont("CustomCaptionRenderFont", {
+        font = font:GetString(),
+        extended = true,
+    	size = 30 * (ScrH() / 1080) * fontscale:GetFloat(),
+    	weight = 300,
+    	antialias = true,
+    	shadow = false,
+    	additive = false,
+    	outline = false,
+    })
+    surface.CreateFont("CustomCaptionRenderBlurFont", {
+        font = font:GetString(),
+        extended = true,
+    	size = 30 * (ScrH() / 1080) * fontscale:GetFloat(),
+    	weight = 300,
+    	antialias = true,
+    	shadow = false,
+    	additive = false,
+    	outline = false,
+        blursize = 2 * (ScrH() / 1080)
+    })
+end
 
 local function ParseCaption(soundscript, duration, fromplayer, text)
     -- beware: might induce sleep loss and insanity
@@ -27,7 +45,7 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
     local counter = 0
     local color = color_white
     
-    if text != nil and enable:GetBool() then
+    if text != nil then
         if GetConVar("developer"):GetBool() and debugparsing:GetBool() then 
             text = "<clr:128,255,127>HELLO THERE<clr:126,217,255>COLOR SWITCH<clr:255,255,255>really stupid long line why am I trying to fabricate a stupid long line what the hell is wrong with me why do I need such a long line, why do I still need a much longer line what is wrong with glua today" --forces line break on 16:9 too
         end
@@ -65,12 +83,19 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
             local texttbl = string.Explode(" ", outtable[1][1], false)
             surface.SetFont("CustomCaptionRenderFont")
 
+            -- if I see one more unneeded space-
+            for i = #texttbl, 1, -1 do
+                if !texttbl[i] or texttbl[i] == "" then
+                    table.remove(texttbl, i)
+                end
+            end
+
             for f=1,#texttbl do
                 if !texttbl[f] then
                 elseif string.StartsWith(texttbl[f], "<cr>") then
                     drawtbl[#drawtbl + 1] = drawtxt
                     drawtxt = string.Right(texttbl[f], 3)
-                elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < ScrW() * 0.65 then
+                elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < maxlinesize then
                     drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
                     if f == #texttbl then
                         drawtbl[#drawtbl + 1] = drawtxt
@@ -104,7 +129,7 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                         teststringlen = 0
                         drawtbl[#drawtbl + 1] = {}
                         drawtbli = #drawtbl
-                    elseif (select(1, surface.GetTextSize(teststring .. (teststring == "" and "" or " ") .. texttbl[f])) + teststringlen) < ScrW() * 0.65 then
+                    elseif (select(1, surface.GetTextSize(teststring .. (teststring == "" and "" or " ") .. texttbl[f])) + teststringlen) < maxlinesize then
                         teststring = teststring .. (teststring == "" and "" or " ") .. texttbl[f]
                         if f == #texttbl then
                             teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
@@ -132,88 +157,11 @@ end
 local function DrawCaptions()
     surface.SetFont("CustomCaptionRenderFont")
     local h = select(2, surface.GetTextSize("TESTING"))
+
     if enable:GetBool() then
         local linecount = 0
 
         lineadjust = math.max(lineadjust - FrameTime() * 6, 0)
-
-        -- DEPRECATED: Previous rendering implementation, PARSES ONCE EVERY FRAME
-        --[[for i=1,#captiondata do
-            if #captiondata[i][1] == 1 then
-                local drawtxt = ""
-                local drawtbl = {}
-                local texttbl = string.Explode(" ", captiondata[i][1][1][1], false)
-
-                for f=1,#texttbl do
-                    if !texttbl[f] then
-                    elseif string.StartsWith(texttbl[f], "<cr>") then
-                        drawtbl[#drawtbl + 1] = drawtxt
-                        drawtxt = string.Right(texttbl[f], 3)
-                    elseif surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]) < ScrW() * 0.6 then
-                        drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
-                        if f == #texttbl then
-                            drawtbl[#drawtbl + 1] = drawtxt
-                        end
-                    else
-                        drawtbl[#drawtbl + 1] = drawtxt
-                        drawtxt = texttbl[f]
-                    end
-                end
-
-                drawtxt = ""
-                for f=1,#drawtbl do
-                    drawtxt = drawtxt .. drawtbl[f] .. (#drawtbl >= 1 and "\n" or "")
-                end
-                draw.DrawText(drawtxt, "CustomCaptionRenderFont", ScrW() * 0.5, ScrH() * 0.75 + h * linecount, captiondata[i][1][1][2] or color_white, TEXT_ALIGN_CENTER)
-                linecount = linecount + #drawtbl
-            else
-                local drawtbl = {}
-                drawtbl[1] = {} -- thanks lua
-                local drawtbli = 1
-                local teststringlen = 0
-                for e=1,#captiondata[i][1] do
-                    surface.SetFont("CustomCaptionRenderFont")
-                    local texttbl = string.Explode(" ", captiondata[i][1][e][1], false)
-                    local teststring = ""
-
-                    -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
-                    for f=1,#texttbl do
-                        if string.StartsWith(texttbl[f], "<cr>") then -- force a line break
-                            drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}
-                            teststring = string.Right(texttbl[f], string.len(texttbl[f]) - 4)
-                            teststringlen = 0
-                            drawtbl[#drawtbl + 1] = {}
-                            drawtbli = #drawtbl
-                        elseif (select(1, surface.GetTextSize(teststring .. (teststring == "" and "" or " ") .. texttbl[f])) + teststringlen) < ScrW() * 0.55 then
-                            teststring = teststring .. (teststring == "" and "" or " ") .. texttbl[f]
-                            if f == #texttbl then
-                                teststringlen = teststringlen + select(1, surface.GetTextSize(teststring))
-                                drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}    
-                            end
-                        else
-                            drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, captiondata[i][1][e][2], surface.GetTextSize(teststring)}
-                            teststring = texttbl[f]
-                            teststringlen = 0
-                            drawtbl[#drawtbl + 1] = {}
-                            drawtbli = #drawtbl
-                        end
-                    end
-                end
-                
-                for i=1,#drawtbl do
-                    local linelen = 0
-                    for e=1,#drawtbl[i] do
-                        linelen = linelen + drawtbl[i][e][3]
-                    end
-                    surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.75 + h * linecount)
-                    for e=1,#drawtbl[i] do
-                        surface.SetTextColor(drawtbl[i][e][2].r,drawtbl[i][e][2].g,drawtbl[i][e][2].b,255)
-                        surface.DrawText(drawtbl[i][e][1])
-                    end
-                    linecount = linecount + 1
-                end
-            end
-        end]]
 
         for i=1,#expcaptionout do
             if !expcaptionout[i][5] and #expcaptionout[i][1] >= 1 and totallines == 0 then
@@ -230,9 +178,26 @@ local function DrawCaptions()
         for i=1,#expcaptionout do
             if expcaptionout[i][4] then
                 local drawtxt = ""
+                local txtwide = {}
+
+                surface.SetFont("CustomCaptionRenderFont")
+
                 for f=1,#expcaptionout[i][1] do
                     drawtxt = drawtxt .. expcaptionout[i][1][f] .. (f < #expcaptionout[i][1] and "\n" or "")
+                    txtwide[f] = select(1, surface.GetTextSize(expcaptionout[i][1][f]))
                 end
+
+                for f=1, #txtwide do
+                    surface.SetDrawColor(0,0,0,math.min((math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275, 255) * bgopacity:GetFloat())
+                    surface.DrawRect(ScrW() / 2 - txtwide[f] / 2, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust + h * (f - 1), txtwide[f], h)
+                end
+
+                for num=1,3 do -- do three shadow passes for outline purposes
+                    draw.DrawText(drawtxt, "CustomCaptionRenderBlurFont", ScrW() * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust,
+                        Color(0,0,0,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
+                        or color_white, TEXT_ALIGN_CENTER)
+                end
+
                 draw.DrawText(drawtxt, "CustomCaptionRenderFont", ScrW() * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust,
                     Color(expcaptionout[i][4].r,expcaptionout[i][4].g,expcaptionout[i][4].b,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
                     or color_white, TEXT_ALIGN_CENTER)
@@ -240,12 +205,28 @@ local function DrawCaptions()
             else
                 for g=1,#expcaptionout[i][1] do
                     local linelen = 0
+                    local fullstring = ""
+
                     for e=1,#expcaptionout[i][1][g] do
                         linelen = linelen + expcaptionout[i][1][g][e][3]
                     end
+
+                    surface.SetDrawColor(0,0,0,math.min((math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275, 255) * bgopacity:GetFloat())
+                    surface.DrawRect(ScrW() / 2 - linelen / 2, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust, linelen, h)
+
+                    for num=1,3 do -- do three shadow passes for outline purposes
+                        surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust)
+                        for e=1,#expcaptionout[i][1][g] do
+                            surface.SetTextColor(0,0,0,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
+                            surface.SetFont("CustomCaptionRenderBlurFont")
+                            surface.DrawText(expcaptionout[i][1][g][e][1])
+                        end
+                    end
+
                     surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust)
                     for e=1,#expcaptionout[i][1][g] do
                         surface.SetTextColor(expcaptionout[i][1][g][e][2].r,expcaptionout[i][1][g][e][2].g,expcaptionout[i][1][g][e][2].b,(math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275)
+                        surface.SetFont("CustomCaptionRenderFont")
                         surface.DrawText(expcaptionout[i][1][g][e][1])
                     end
                     linecount = linecount + 1
@@ -262,6 +243,11 @@ local function DrawCaptions()
     end
 end
 
+CreateFont()
+
 hook.Add("OnCloseCaptionEmit", "GMCaptionThingGrab", ParseCaption)
 hook.Add("HUDPaint", "GMCaptionThingDraw", DrawCaptions)
-hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if name == "CHudCloseCaption" and enable:GetBool() then return false end end)
+hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if (name == "CHudCloseCaption" and enable:GetBool()) then return false end end)
+hook.Add("OnScreenSizeChanged", "GMCaptionResChange", function() CreateFont() end)
+
+cvars.AddChangeCallback("funnycaptions_font", CreateFont, "CustomCaptionsRefreshFont")
