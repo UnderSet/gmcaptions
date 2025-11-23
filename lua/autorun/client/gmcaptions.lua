@@ -1,6 +1,7 @@
 -- fun fact: like 99% of this is from my MWII HUD which is GPL, but I wrote all of this stuff myself so
 -- I can relicense it as I bloody please
 local maxlinesize = ScrH() * 1.1 - math.max(ScrH() * (16/9) - ScrW(), 0) -- easily adjust max line length yourself!
+local edgepadding = 4 * (ScrH() / 1080)
 
 local enable = CreateClientConVar("funnycaptions_enable", 1, true, false, "enable said funne captions")
 local debugparsing = CreateClientConVar("funnycaptions_debugparse", 1, true, false, "enable dev debug parse text")
@@ -13,7 +14,6 @@ local expcaptionout = expcaptionout or {}
 
 local lineadjust = lineadjust or 0
 local totallines = 0
-
 
 local function CreateFont()
     surface.CreateFont("CustomCaptionRenderFont", {
@@ -121,6 +121,12 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
                 local texttbl = string.Explode(" ", outtable[e][1], false)
                 local teststring = ""
 
+                for i = #texttbl, 1, -1 do
+                    if !texttbl[i] or texttbl[i] == "" then
+                        table.remove(texttbl, i)
+                    end
+                end
+
                 -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
                 for f=1,#texttbl do
                     if string.StartsWith(texttbl[f], "<cr>") then -- force a line break
@@ -189,7 +195,7 @@ local function DrawCaptions()
 
                 for f=1, #txtwide do
                     surface.SetDrawColor(0,0,0,math.min((math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275, 255) * bgopacity:GetFloat())
-                    surface.DrawRect(ScrW() / 2 - txtwide[f] / 2, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust + h * (f - 1), txtwide[f], h)
+                    surface.DrawRect(ScrW() / 2 - txtwide[f] / 2 - edgepadding, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust + h * (f - 1), txtwide[f] + edgepadding * 2, h)
                 end
 
                 for num=1,3 do -- do three shadow passes for outline purposes
@@ -212,7 +218,7 @@ local function DrawCaptions()
                     end
 
                     surface.SetDrawColor(0,0,0,math.min((math.min(CurTime() - expcaptionout[i][3], 1) - math.max(CurTime() - expcaptionout[i][2], 0)) * 1275, 255) * bgopacity:GetFloat())
-                    surface.DrawRect(ScrW() / 2 - linelen / 2, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust, linelen, h)
+                    surface.DrawRect(ScrW() / 2 - linelen / 2 - edgepadding, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust, linelen + edgepadding * 2, h)
 
                     for num=1,3 do -- do three shadow passes for outline purposes
                         surface.SetTextPos(ScrW() * 0.5 - linelen * 0.5, ScrH() * 0.83 + h * linecount - h * totallines + h * lineadjust)
@@ -251,3 +257,9 @@ hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if (name == "CH
 hook.Add("OnScreenSizeChanged", "GMCaptionResChange", function() CreateFont() end)
 
 cvars.AddChangeCallback("funnycaptions_font", CreateFont, "CustomCaptionsRefreshFont")
+
+concommand.Add("funnycaptions_resetcache", function()
+    expcaptionout = {}
+    lineadjust = 0
+    totallines = 0
+end, {}, "Clears the internal \"cache\" of subtitles. Use if subtitles are broken/won't display for whatever reason.")
