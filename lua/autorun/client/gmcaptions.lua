@@ -55,7 +55,9 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
         else
             actualtext = string.Explode("<", text, false)
             for i=1,#actualtext do
-                if string.StartsWith(actualtext[i], "clr:") then
+                if string.StartsWith(actualtext[i], "cr>") then -- fix carriage returns (what the hell was I on earlier)
+                    outtable[i] = {actualtext[i], color}
+                elseif string.StartsWith(actualtext[i], "clr:") then
                     local colorstr = string.Explode(">",string.Replace(actualtext[i], "clr:", ""))[1]
                     local outtext = string.Replace(actualtext[i], "clr:"..colorstr..">", "")
                     color = string.Explode(",", colorstr, false)
@@ -92,9 +94,9 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
 
             for f=1,#texttbl do
                 if !texttbl[f] then
-                elseif string.StartsWith(texttbl[f], "<cr>") then
-                    drawtbl[#drawtbl + 1] = drawtxt
-                    drawtxt = string.Right(texttbl[f], 3)
+                elseif string.StartsWith(texttbl[f], "cr>") then
+                    drawtbl[#drawtbl + 1] = string.Explode(">", texttbl[f], false)[2] 
+                    drawtxt = string.Explode(">", texttbl[f], false)[2] 
                 elseif select(1, surface.GetTextSize(drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f])) < maxlinesize then
                     drawtxt = drawtxt .. (drawtxt == "" and "" or " ") .. texttbl[f]
                     if f == #texttbl then
@@ -118,20 +120,14 @@ local function ParseCaption(soundscript, duration, fromplayer, text)
             surface.SetFont("CustomCaptionRenderFont")
 
             for e=1,#outtable do
-                local texttbl = string.Explode(" ", outtable[e][1], false)
                 local teststring = ""
-
-                for i = #texttbl, 1, -1 do
-                    if !texttbl[i] or texttbl[i] == "" then
-                        table.remove(texttbl, i)
-                    end
-                end
+                local texttbl = string.Explode(" ", outtable[e][1], false)
 
                 -- surface.GetTextSize() isn't cooperating with select() here so wasted memory :sadge:
                 for f=1,#texttbl do
-                    if string.StartsWith(texttbl[f], "<cr>") then -- force a line break
+                    if string.StartsWith(texttbl[f], "cr>") then -- force a line break
                         drawtbl[drawtbli][#drawtbl[drawtbli] + 1] = {teststring, outtable[e][2], surface.GetTextSize(teststring)}
-                        teststring = string.Right(texttbl[f], string.len(texttbl[f]) - 4)
+                        teststring = string.Right(texttbl[f], string.len(texttbl[f]) - 3)
                         teststringlen = 0
                         drawtbl[#drawtbl + 1] = {}
                         drawtbli = #drawtbl
@@ -209,6 +205,7 @@ local function DrawCaptions()
                     or color_white, TEXT_ALIGN_CENTER)
                 linecount = linecount + #expcaptionout[i][1]
             else
+                --PrintTable(expcaptionout[i][1])
                 for g=1,#expcaptionout[i][1] do
                     local linelen = 0
                     local fullstring = ""
