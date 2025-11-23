@@ -8,6 +8,7 @@ Funny "reimplementation" in GLua of Garry's Mod's caption rendering. (Mostly ins
   - Unimplemented: Italic, Bold, `norepeat`, `duration`
 - Bottom-aligned and upward-pushing, whatever that stuff's called
 - Gradual vertical position adjustment for less jarring visuals when new lines come in
+- Background rendering for readability not too unlike Call of Duty
 
 ## Credits
 - [GMod Wiki](https://wiki.facepunch.com/gmod/) for the documentation used
