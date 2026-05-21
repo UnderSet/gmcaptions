@@ -260,4 +260,4 @@ concommand.Add("funnycaptions_resetcache", function()
     expcaptionout = {}
     lineadjust = 0
     totallines = 0
-end, {}, "Clears the internal \"cache\" of subtitles. Use if subtitles are broken/won't display for whatever reason.")
+end, nil, "Clears the internal \"cache\" of subtitles. Use if subtitles are broken/won't display for whatever reason.")
