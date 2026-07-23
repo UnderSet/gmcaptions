@@ -3,12 +3,12 @@
 local maxlinesize = ScrH() * 1.1 - math.max(ScrH() * (16/9) - ScrW(), 0) -- easily adjust max line length yourself!
 local edgepadding = 4 * (ScrH() / 1080)
 
-local enable = CreateClientConVar("funnycaptions_enable", 1, true, false, "enable said funne captions")
-local debugparsing = CreateClientConVar("funnycaptions_debugparse", 1, true, false, "enable dev debug parse text")
-local showsfx = CreateClientConVar("funnycaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
-local font = CreateClientConVar("funnycaptions_font", "Roboto", true, false, "Font to use for captions. Default is Roboto.\nENTER NAME AS SHOWN IN SYSTEM FONT VIEWER, NOT FILENAME")
-local fontscale = CreateClientConVar("funnycaptions_fontscale", 1, true, false, "Adjust font scaling. This is a multiplier on top of the default size. Does not need to be adjusted with resolution as that is done automatically. Useful if you use another font that's significantly bigger/smaller.")
-local bgopacity = CreateClientConVar("funnycaptions_backgroundopacity", 0, true, false, "Controls subtitle background opacity. 0 is entirely transparent, 1 is entirely opaque (duh). Helps with readability. May impact dark/fully black subtitles (why do you have those???).", 0, 1)
+local enable = CreateClientConVar("gmcaptions_enable", 1, true, false, "enable said funne captions")
+local debugparsing = CreateClientConVar("gmcaptions_debugparse", 1, true, false, "enable dev debug parse text")
+local showsfx = CreateClientConVar("gmcaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
+local font = CreateClientConVar("gmcaptions_font", "Roboto", true, false, "Font to use for captions. Default is Roboto.\nENTER NAME AS SHOWN IN SYSTEM FONT VIEWER, NOT FILENAME")
+local fontscale = CreateClientConVar("gmcaptions_fontscale", 1, true, false, "Adjust font scaling. This is a multiplier on top of the default size. Does not need to be adjusted with resolution as that is done automatically. Useful if you use another font that's significantly bigger/smaller.")
+local bgopacity = CreateClientConVar("gmcaptions_backgroundopacity", 0, true, false, "Controls subtitle background opacity. 0 is entirely transparent, 1 is entirely opaque (duh). Helps with readability. May impact dark/fully black subtitles (why do you have those???).", 0, 1)
 
 local expcaptionout = expcaptionout or {}
 
@@ -253,10 +253,10 @@ hook.Add("HUDPaint", "GMCaptionThingDraw", DrawCaptions)
 hook.Add("HUDShouldDraw", "GMCaptionHideDefault", function(name) if (name == "CHudCloseCaption" and enable:GetBool()) then return false end end)
 hook.Add("OnScreenSizeChanged", "GMCaptionResChange", function() CreateFont() end)
 
-cvars.AddChangeCallback("funnycaptions_font", CreateFont, "CustomCaptionsRefreshFont")
-cvars.AddChangeCallback("funnycaptions_fontscale", CreateFont, "CustomCaptionsRefreshFont")
+cvars.AddChangeCallback("gmcaptions_font", CreateFont, "CustomCaptionsRefreshFont")
+cvars.AddChangeCallback("gmcaptions_fontscale", CreateFont, "CustomCaptionsRefreshFont")
 
-concommand.Add("funnycaptions_resetcache", function()
+concommand.Add("gmcaptions_resetcache", function()
     expcaptionout = {}
     lineadjust = 0
     totallines = 0
