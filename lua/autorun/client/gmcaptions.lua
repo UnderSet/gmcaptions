@@ -4,7 +4,7 @@ local maxlinesize = ScrH() * 1.1 - math.max(ScrH() * (16/9) - ScrW(), 0) -- easi
 local edgepadding = 4 * (ScrH() / 1080)
 
 local enable = CreateClientConVar("gmcaptions_enable", 1, true, false, "enable said funne captions")
-local debugparsing = CreateClientConVar("gmcaptions_debugparse", 1, true, false, "enable dev debug parse text")
+local debugparsing = CreateClientConVar("gmcaptions_debugparse", 0, true, false, "enable dev debug parse text")
 local showsfx = CreateClientConVar("gmcaptions_showsfx", 1, true, false, "show sfx in captions, requires setting Settings > Audio > Close Captions to Close Captions")
 local font = CreateClientConVar("gmcaptions_font", "Roboto", true, false, "Font to use for captions. Default is Roboto.\nENTER NAME AS SHOWN IN SYSTEM FONT VIEWER, NOT FILENAME")
 local fontscale = CreateClientConVar("gmcaptions_fontscale", 1, true, false, "Adjust font scaling. This is a multiplier on top of the default size. Does not need to be adjusted with resolution as that is done automatically. Useful if you use another font that's significantly bigger/smaller.")
